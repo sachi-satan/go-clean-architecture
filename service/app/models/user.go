@@ -22,6 +22,7 @@ func NewUser() *User {
 		ID:          0,
 		Username:    "",
 		Email:       "",
+		Password:    "",
 		DisplayName: "",
 		Bio:         "",
 		CreatedAt:   time.Time{},
