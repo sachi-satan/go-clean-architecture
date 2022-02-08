@@ -13,16 +13,14 @@ import (
 )
 
 type AuthSignUpInteractor struct {
-	userRepo     repositories.IUserRepository
-	jwtService   *services.Jwt
-	mysqlService *services.MySql
+	userRepo repositories.IUserRepository
+	service  *services.Service
 }
 
-func NewAuthSignUpInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt, mysqlService *services.MySql) *AuthSignUpInteractor {
+func NewAuthSignUpInteractor(userRepo repositories.IUserRepository, service *services.Service) *AuthSignUpInteractor {
 	return &AuthSignUpInteractor{
-		userRepo:     userRepo,
-		mysqlService: mysqlService,
-		jwtService:   jwtService,
+		userRepo: userRepo,
+		service:  service,
 	}
 }
 
@@ -33,7 +31,7 @@ func (r *AuthSignUpInteractor) Handle(in *inputs.AuthSignUpInputData) (int, *out
 		return http.StatusInternalServerError, nil, err
 	}
 
-	err = r.mysqlService.DB.Transaction(func(tx *gorm.DB) error {
+	err = r.service.Mysql.DB.Transaction(func(tx *gorm.DB) error {
 		err := r.userRepo.Save(tx, user)
 		if err != nil {
 			return err
@@ -46,7 +44,7 @@ func (r *AuthSignUpInteractor) Handle(in *inputs.AuthSignUpInputData) (int, *out
 		return http.StatusBadRequest, nil, err
 	}
 
-	accessToken, err := r.jwtService.GenToken(strconv.Itoa(user.ID))
+	accessToken, err := r.service.Jwt.GenToken(strconv.Itoa(user.ID))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}
@@ -57,14 +55,14 @@ func (r *AuthSignUpInteractor) Handle(in *inputs.AuthSignUpInputData) (int, *out
 }
 
 type AuthSingInInteractor struct {
-	userRepo   repositories.IUserRepository
-	jwtService *services.Jwt
+	userRepo repositories.IUserRepository
+	service  *services.Service
 }
 
-func NewAuthSingInInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt) *AuthSingInInteractor {
+func NewAuthSingInInteractor(userRepo repositories.IUserRepository, service *services.Service) *AuthSingInInteractor {
 	return &AuthSingInInteractor{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo: userRepo,
+		service:  service,
 	}
 }
 
@@ -74,7 +72,7 @@ func (r *AuthSingInInteractor) Handle(in *inputs.AuthSignInInputData) (int, *out
 		return http.StatusUnauthorized, nil, errors.New("the credentials are incorrect")
 	}
 
-	accessToken, err := r.jwtService.GenToken(strconv.Itoa(user.ID))
+	accessToken, err := r.service.Jwt.GenToken(strconv.Itoa(user.ID))
 	if err != nil {
 		return http.StatusInternalServerError, nil, err
 	}

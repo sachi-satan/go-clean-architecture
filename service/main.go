@@ -7,50 +7,30 @@ import (
 	"backend/app/policies"
 	"backend/app/repositories"
 	"backend/app/services"
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"os"
 )
 
 func main() {
-	err := godotenv.Load(".env")
+	service, err := services.NewService()
 	if err != nil {
 		os.Exit(1)
 	}
 
-	mysqlService, err := services.NewMySqlService(
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_DATABASE"),
-	)
-	if err != nil {
-		os.Exit(1)
-	}
+	userRepository := repositories.NewUserRepository(service.Mysql)
 
-	jwtService, err := services.NewJwtService(
-		os.Getenv("PRIVATE_KEY_FILE_PATH"),
-		os.Getenv("PUBLIC_KEY_FILE_PATH"),
-	)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	userRepository := repositories.NewUserRepository(mysqlService)
-
-	authSignUpInteractor := interactors.NewAuthSignUpInteractor(userRepository, jwtService, mysqlService)
-	authSignInInteractor := interactors.NewAuthSingInInteractor(userRepository, jwtService)
+	authSignUpInteractor := interactors.NewAuthSignUpInteractor(userRepository, service)
+	authSignInInteractor := interactors.NewAuthSingInInteractor(userRepository, service)
 	authController := controllers.NewAuthController(authSignUpInteractor, authSignInInteractor)
 
 	userPolicy := policies.NewUserPolicy(userRepository)
-	userListInteractor := interactors.NewUserListInteractor(userRepository, mysqlService)
+	userListInteractor := interactors.NewUserListInteractor(userRepository, service)
 	userGetInteractor := interactors.NewUserGetInteractor(userRepository)
-	userUpdateInteractor := interactors.NewUserUpdateInteractor(userRepository, jwtService, mysqlService)
-	userDeleteInteractor := interactors.NewUserDeleteInteractor(userRepository, jwtService, mysqlService)
+	userUpdateInteractor := interactors.NewUserUpdateInteractor(userRepository, service)
+	userDeleteInteractor := interactors.NewUserDeleteInteractor(userRepository, service)
 	userController := controllers.NewUserController(userPolicy, userListInteractor, userGetInteractor, userUpdateInteractor, userDeleteInteractor)
 
-	authMiddleWare := middlewares.AuthMiddleWare(jwtService, userRepository)
+	authMiddleWare := middlewares.AuthMiddleWare(service.Jwt, userRepository)
 
 	e := echo.New()
 	g := e.Group("/v1")
