@@ -13,12 +13,14 @@ import (
 // List
 
 type UserListInteractor struct {
-	userRepo repositories.IUserRepository
+	userRepo     repositories.IUserRepository
+	mysqlService *services.MySql
 }
 
-func NewUserListInteractor(userRepo repositories.IUserRepository) *UserListInteractor {
+func NewUserListInteractor(userRepo repositories.IUserRepository, mysqlService *services.MySql) *UserListInteractor {
 	return &UserListInteractor{
-		userRepo: userRepo,
+		userRepo:     userRepo,
+		mysqlService: mysqlService,
 	}
 }
 
@@ -57,14 +59,16 @@ func (r *UserGetInteractor) Handle(in *inputs.UserGetInputData) (int, *outputs.U
 // Update
 
 type UserUpdateInteractor struct {
-	userRepo   repositories.IUserRepository
-	jwtService *services.Jwt
+	userRepo     repositories.IUserRepository
+	jwtService   *services.Jwt
+	mysqlService *services.MySql
 }
 
-func NewUserUpdateInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt) *UserUpdateInteractor {
+func NewUserUpdateInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt, mysqlService *services.MySql) *UserUpdateInteractor {
 	return &UserUpdateInteractor{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo:     userRepo,
+		jwtService:   jwtService,
+		mysqlService: mysqlService,
 	}
 }
 
@@ -76,7 +80,7 @@ func (r *UserUpdateInteractor) Handle(in *inputs.UserUpdateInputData) (int, *out
 
 	user.SetUser(in.Username, in.Email, in.DisplayName, in.Bio)
 
-	err = r.userRepo.DB().(*gorm.DB).Transaction(func(tx *gorm.DB) error {
+	err = r.mysqlService.DB.Transaction(func(tx *gorm.DB) error {
 		err := r.userRepo.Save(tx, user)
 		if err != nil {
 			return err
@@ -97,14 +101,16 @@ func (r *UserUpdateInteractor) Handle(in *inputs.UserUpdateInputData) (int, *out
 // Delete
 
 type UserDeleteInteractor struct {
-	userRepo   repositories.IUserRepository
-	jwtService *services.Jwt
+	userRepo     repositories.IUserRepository
+	jwtService   *services.Jwt
+	mysqlService *services.MySql
 }
 
-func NewUserDeleteInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt) *UserDeleteInteractor {
+func NewUserDeleteInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt, mysqlService *services.MySql) *UserDeleteInteractor {
 	return &UserDeleteInteractor{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo:     userRepo,
+		jwtService:   jwtService,
+		mysqlService: mysqlService,
 	}
 }
 
@@ -114,7 +120,7 @@ func (r *UserDeleteInteractor) Handle(in *inputs.UserDeleteInputData) (int, erro
 		return http.StatusNotFound, errors.New("user is not found")
 	}
 
-	err = r.userRepo.DB().(*gorm.DB).Transaction(func(tx *gorm.DB) error {
+	err = r.mysqlService.DB.Transaction(func(tx *gorm.DB) error {
 		err := r.userRepo.Delete(tx, user)
 		if err != nil {
 			return err

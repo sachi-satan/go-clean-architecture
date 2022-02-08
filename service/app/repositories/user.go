@@ -2,27 +2,24 @@ package repositories
 
 import (
 	"backend/app/models"
+	"backend/app/services"
 	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db interface{}
+	db *gorm.DB
 }
 
-func NewUserRepository(db interface{}) *UserRepository {
+func NewUserRepository(mysqlService *services.MySql) *UserRepository {
 	return &UserRepository{
-		db: db,
+		db: mysqlService.DB,
 	}
-}
-
-func (r *UserRepository) DB() interface{} {
-	return r.db
 }
 
 func (r *UserRepository) Find(id []string, username []string) ([]*models.User, error) {
 	var users []*models.User
 
-	d := r.db.(*gorm.DB)
+	d := r.db
 
 	if len(id) > 0 {
 		d = d.Where("id IN ?", id)
@@ -38,13 +35,13 @@ func (r *UserRepository) Find(id []string, username []string) ([]*models.User, e
 
 func (r *UserRepository) GetById(id string) (*models.User, error) {
 	u := models.NewUser()
-	d := r.db.(*gorm.DB).First(u, id)
+	d := r.db.First(u, id)
 	return u, d.Error
 }
 
 func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	u := models.NewUser()
-	d := r.db.(*gorm.DB).Where("email = ?", email).First(u)
+	d := r.db.Where("email = ?", email).First(u)
 	return u, d.Error
 }
 

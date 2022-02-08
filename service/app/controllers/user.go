@@ -2,12 +2,15 @@ package controllers
 
 import (
 	"backend/app/inputs"
+	"backend/app/models"
+	"backend/app/policies"
 	"backend/app/usecases"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
 type UserController struct {
+	userPolicy    *policies.UserPolicy
 	listUseCase   usecases.IUserListUseCase
 	getUseCase    usecases.IUserGetUseCase
 	updateUseCase usecases.IUserUpdateUseCase
@@ -15,12 +18,14 @@ type UserController struct {
 }
 
 func NewUserController(
+	userPolicy *policies.UserPolicy,
 	listUseCase usecases.IUserListUseCase,
 	getUseCase usecases.IUserGetUseCase,
 	updateUseCase usecases.IUserUpdateUseCase,
 	deleteUseCase usecases.IUserDeleteUseCase,
 ) *UserController {
 	return &UserController{
+		userPolicy:    userPolicy,
 		listUseCase:   listUseCase,
 		getUseCase:    getUseCase,
 		updateUseCase: updateUseCase,
@@ -76,6 +81,11 @@ func (r *UserController) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	err = r.userPolicy.Update(c.Get("auth").(*models.User), ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	}
+
 	code, out, err := r.updateUseCase.Handle(in)
 	if err != nil {
 		return echo.NewHTTPError(code, err.Error())
@@ -91,6 +101,11 @@ func (r *UserController) Delete(c echo.Context) error {
 	err := in.Validate()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = r.userPolicy.Update(c.Get("auth").(*models.User), ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 	}
 
 	code, err := r.deleteUseCase.Handle(in)

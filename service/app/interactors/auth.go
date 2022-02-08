@@ -13,14 +13,16 @@ import (
 )
 
 type AuthSignUpInteractor struct {
-	userRepo   repositories.IUserRepository
-	jwtService *services.Jwt
+	userRepo     repositories.IUserRepository
+	jwtService   *services.Jwt
+	mysqlService *services.MySql
 }
 
-func NewAuthSignUpInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt) *AuthSignUpInteractor {
+func NewAuthSignUpInteractor(userRepo repositories.IUserRepository, jwtService *services.Jwt, mysqlService *services.MySql) *AuthSignUpInteractor {
 	return &AuthSignUpInteractor{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo:     userRepo,
+		mysqlService: mysqlService,
+		jwtService:   jwtService,
 	}
 }
 
@@ -31,7 +33,7 @@ func (r *AuthSignUpInteractor) Handle(in *inputs.AuthSignUpInputData) (int, *out
 		return http.StatusInternalServerError, nil, err
 	}
 
-	err = r.userRepo.DB().(*gorm.DB).Transaction(func(tx *gorm.DB) error {
+	err = r.mysqlService.DB.Transaction(func(tx *gorm.DB) error {
 		err := r.userRepo.Save(tx, user)
 		if err != nil {
 			return err

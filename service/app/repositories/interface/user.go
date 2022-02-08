@@ -5,7 +5,6 @@ import (
 )
 
 type IUserRepository interface {
-	DB() interface{}
 	Find(id []string, username []string) ([]*models.User, error)
 	GetById(id string) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
